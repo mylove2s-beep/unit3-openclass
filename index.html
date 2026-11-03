@@ -707,6 +707,10 @@ display:flex; gap:10px; flex-wrap:wrap; margin:34px 0 0}
 .cloudrow>b{font-size:13.5px;color:var(--ink)}
 .cloudrow .d{font-size:12px;color:var(--ink-3);margin-left:6px}
 .cloudrow p{margin:6px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap}
+.sigview{display:flex;flex-direction:column;align-items:center;gap:3px;margin-left:auto;margin-right:10px;text-decoration:none}
+.sigview img{width:64px;height:28px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:4px;display:block}
+.sigview i{font-style:normal;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em}
+.sigview--none{font-size:10px;color:var(--ink-4);margin-left:auto;margin-right:12px}
 </style>
 </head>
 <body>
@@ -2766,6 +2770,20 @@ body[data-annot="on"] .ann{display:block}
   function showErr(msg){ errEl.textContent = msg; errEl.dataset.show = "true"; }
   function clearErr(){ errEl.dataset.show = "false"; }
 
+  /* 서명을 인쇄·확인용으로 축소 저장 (JPEG) */
+  function sigImage(){
+    try{
+      var W = 560;
+      var H = Math.max(1, Math.round(cv.height * (W / cv.width)));
+      var oc = document.createElement("canvas");
+      oc.width = W; oc.height = H;
+      var g = oc.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
+      g.drawImage(cv, 0, 0, W, H);
+      return oc.toDataURL("image/jpeg", 0.78);
+    }catch(e){ return cv.toDataURL("image/png"); }
+  }
+
   form.addEventListener("submit", function(e){
     e.preventDefault();
     clearErr();
@@ -2784,7 +2802,7 @@ body[data-annot="on"] .ann{display:block}
     var rec = {
       id: "참-" + String(now.getFullYear()).slice(2) + pad(now.getMonth()+1) + pad(now.getDate()) + "-" + pad(seq),
       org: org, subject: subject, name: name,
-      sig: cv.toDataURL("image/png"),
+      sig: sigImage(),
       ts: now.toISOString()
     };
     list.push(rec);
@@ -2793,7 +2811,7 @@ body[data-annot="on"] .ann{display:block}
     cloudPost({
       kind:"signin", id: rec.id, org: rec.org, subject: rec.subject,
       name: rec.name, ts: rec.ts,
-      sig: (rec.sig && rec.sig.length < 45000) ? rec.sig : ""
+      sig: (rec.sig && rec.sig.length < 120000) ? rec.sig : ""
     }).catch(function(){});
 
     drawReceipt(rec);
@@ -2827,8 +2845,14 @@ body[data-annot="on"] .ann{display:block}
       if(!CIR.length){ box.innerHTML = '<div class="empty">아직 클라우드에 접수된 기록이 없습니다.</div>'; return; }
       box.innerHTML = '<ul class="roster__list">' + CIR.slice().reverse().map(function(r){
         var t = r.ts ? fmtShort(r.ts) : "";
+        var sig = r.sigId
+          ? '<a class="sigview" href="https://drive.google.com/file/d/' + encodeURIComponent(r.sigId) + '/view" target="_blank" rel="noopener">' +
+              '<img src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(r.sigId) + '&sz=w240" alt="' + esc(r.name || "") + ' 서명">' +
+              '<i>서명 보기</i></a>'
+          : '<span class="sigview sigview--none">서명 없음</span>';
         return '<li class="rrow"><span class="rrow__n">' + esc(r.name || "") +
           '<small>' + esc(r.org || "") + ' · ' + esc(r.subject || "") + '</small></span>' +
+          sig +
           '<span class="rrow__t">' + esc(t) + '</span></li>';
       }).join("") + '</ul>';
     }).catch(function(){
