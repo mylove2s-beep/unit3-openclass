@@ -2409,6 +2409,26 @@ body[data-annot="on"] .ann{display:block}
   var CLASS = { date:"2026.11.4(수)", period:"6교시", room:"1학년 1반" };
   var STORE = "ds_openclass_signins_v1";
 
+  /* ── 클라우드(구글 시트) 공용 주소 ─────────── */
+  var CLOUD_KEY = "ds_openclass_cloud_url_v1";
+  var CLOUD_DEF = "https://script.google.com/macros/s/AKfycbzgBf16BQKdcEavV_25PIlClFpRbfLeDeBw7iLwX2G-IcgofECsJQ4G1llwc8l_awXx/exec";
+  function cloudUrl(){ try{ return (localStorage.getItem(CLOUD_KEY) || CLOUD_DEF).trim(); }catch(e){ return CLOUD_DEF; } }
+  function cloudPost(payload){
+    var u = cloudUrl(); if(!u) return Promise.resolve({ skipped: true });
+    var body = JSON.stringify(payload);
+    var opt = { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: body };
+    return fetch(u, opt).then(function(r){ return r.text(); }).then(function(t){
+      var j = JSON.parse(t); if(!j || !j.ok) throw new Error("bad"); return j;
+    }).catch(function(){
+      return fetch(u, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: body })
+        .then(function(){ return { ok:true, unknown:true }; });
+    });
+  }
+  function cloudJson(qs){
+    var u = cloudUrl(); if(!u) return Promise.reject(new Error("nourl"));
+    return fetch(u + (u.indexOf("?") > -1 ? "&" : "?") + qs).then(function(r){ return r.json(); });
+  }
+
 
   /* ── 외부 이동: 미리보기 프레임을 벗어나 연다 ── */
   document.addEventListener("click", function(e){
@@ -2769,6 +2789,11 @@ body[data-annot="on"] .ann{display:block}
     list.push(rec);
     writeAll(list);
     lastSaved = rec;
+    cloudPost({
+      kind:"signin", id: rec.id, org: rec.org, subject: rec.subject,
+      name: rec.name, ts: rec.ts,
+      sig: (rec.sig && rec.sig.length < 45000) ? rec.sig : ""
+    }).catch(function(){});
 
     drawReceipt(rec);
     drawRoster();
@@ -2779,6 +2804,36 @@ body[data-annot="on"] .ann{display:block}
   });
 
   document.getElementById("ciReset").addEventListener("click", function(){ clearSig(); clearErr(); });
+
+  /* ── 클라우드 접수 명단 ───────────────────── */
+  rosterZone.insertAdjacentHTML("afterend",
+    '<div id="ciCloud" style="margin-top:26px">' +
+      '<div class="roster__head"><h2>클라우드 접수 명단</h2><span class="roster__count" id="ciCloudN"></span></div>' +
+      '<div id="ciCloudList"><div class="empty">아래 「전체 불러오기」를 누르면, 참관 교사들이 각자 휴대폰으로 접수한 명단이 모두 나타납니다.</div></div>' +
+      '<div class="roster__acts" style="margin-top:12px">' +
+        '<button type="button" class="btn btn--ghost btn--sm" id="ciCloudLoad">전체 불러오기</button>' +
+      '</div>' +
+    '</div>');
+
+  var CIR = [];
+  document.getElementById("ciCloudLoad").addEventListener("click", function(){
+    var box = document.getElementById("ciCloudList");
+    box.innerHTML = '<div class="empty">불러오는 중…</div>';
+    cloudJson("action=list&type=signin").then(function(j){
+      if(!j || !j.ok) throw new Error("x");
+      CIR = j.rows || [];
+      document.getElementById("ciCloudN").textContent = CIR.length ? CIR.length + "명 · 클라우드" : "";
+      if(!CIR.length){ box.innerHTML = '<div class="empty">아직 클라우드에 접수된 기록이 없습니다.</div>'; return; }
+      box.innerHTML = '<ul class="roster__list">' + CIR.slice().reverse().map(function(r){
+        var t = r.ts ? fmtShort(r.ts) : "";
+        return '<li class="rrow"><span class="rrow__n">' + esc(r.name || "") +
+          '<small>' + esc(r.org || "") + ' · ' + esc(r.subject || "") + '</small></span>' +
+          '<span class="rrow__t">' + esc(t) + '</span></li>';
+      }).join("") + '</ul>';
+    }).catch(function(){
+      box.innerHTML = '<div class="empty">불러오지 못했습니다. 인터넷 연결을 확인해 주세요.</div>';
+    });
+  });
 
   function drawReceipt(rec){
     receiptZone.innerHTML =
