@@ -691,6 +691,23 @@ display:flex; gap:10px; flex-wrap:wrap; margin:34px 0 0}
   #recDone{display:none!important}
 }
 </style>
+<style>
+.cloudset{margin-top:18px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2)}
+.cloudset>summary{cursor:pointer;padding:12px 16px;font-size:13px;font-weight:600;color:var(--moss)}
+.cloudset__in{padding:0 16px 16px;border-top:1px solid var(--line)}
+.cloudset__lead{font-size:12.5px;color:var(--ink-3);line-height:1.7;margin:12px 0}
+.cloudset__f{display:block;margin:10px 0}
+.cloudset__f span{display:block;font-size:11.5px;color:var(--ink-4);letter-spacing:.06em;margin-bottom:5px}
+.cloudset__act{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.btn--sm{font-size:12.5px;padding:8px 14px;min-height:36px}
+.cloudset__st{font-size:12px;color:var(--ink-3);margin:8px 0 0;min-height:1.3em;line-height:1.6}
+.cloudset__st.ok{color:var(--moss-2)} .cloudset__st.ng{color:var(--seal)}
+.cloudrow{border-top:1px solid var(--line);padding:11px 0}
+.cloudrow:first-child{border-top:0}
+.cloudrow>b{font-size:13.5px;color:var(--ink)}
+.cloudrow .d{font-size:12px;color:var(--ink-3);margin-left:6px}
+.cloudrow p{margin:6px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.7;white-space:pre-wrap}
+</style>
 </head>
 <body>
 <style>
@@ -2197,7 +2214,23 @@ body[data-annot="on"] .ann{display:block}
               <button type="button" class="btn btn--ghost" id="recPrint">인쇄 · PDF 저장</button>
               <a class="btn btn--ghost" data-ext="download" href="https://www.genspark.ai/api/files/s/SKsdxXL9" download="수평나 수업 참관록.hwpx" target="_top" rel="noopener">한글 양식 내려받기</a>
             </div>
-            <p class="rec__note">제출하신 참관록은 이 기기에 저장되며, 아래에서 CSV로 내려받아 취합하실 수 있습니다. 인쇄·PDF는 제출 후에도 사용하실 수 있습니다.</p>
+            <p class="rec__note" id="recNote">제출하면 <b>이 기기</b>에 저장되고, 아래에 「동기화 주소」를 설정해 두면 <b>구글 시트</b>에도 함께 모입니다. 인쇄·PDF는 제출 후에도 사용하실 수 있습니다.</p>
+
+            <details class="cloudset" id="cloudSet">
+              <summary>클라우드 접수 설정 — 여러 선생님의 기록을 한 곳에 모으기</summary>
+              <div class="cloudset__in">
+                <p class="cloudset__lead">구글 시트에 연결한 Apps Script 웹 앱 주소를 여기에 한 번만 붙여넣으면, 참관 교사가 각자 휴대폰으로 제출한 참관록이 <b>선생님 구글 시트 한 장</b>에 차곡차곡 쌓입니다. 참관 교사는 아무것도 설정할 필요가 없습니다. <b>주소는 이미 입력되어 있으니, 「연결 확인」만 눌러 보세요.</b></p>
+                <label class="cloudset__f"><span>동기화 주소 (Apps Script 웹 앱 URL)</span>
+                  <input class="ri" id="cloudUrl" type="url" placeholder="https://script.google.com/macros/s/AKfy…/exec" autocomplete="off">
+                </label>
+                <div class="cloudset__act">
+                  <button type="button" class="btn btn--sm" id="cloudSave">주소 저장</button>
+                  <button type="button" class="btn btn--sm btn--ghost" id="cloudTest">연결 확인</button>
+                  <button type="button" class="btn btn--sm btn--ghost" id="cloudClear">해제</button>
+                </div>
+                <p class="cloudset__st" id="cloudSt"></p>
+              </div>
+            </details>
           </form>
 
           <div class="rec__done" id="recDone" hidden>
@@ -2213,6 +2246,13 @@ body[data-annot="on"] .ann{display:block}
 
           <h2 class="sec">제출된 참관록 <span class="sec__en" id="recCount"></span></h2>
           <div id="recList" class="reclist"></div>
+
+          <h2 class="sec">클라우드에 모인 참관록 <span class="sec__en" id="cloudCount"></span></h2>
+          <div id="cloudList" class="reclist"><div class="reclist__e">동기화 주소를 설정한 뒤 「전체 불러오기」를 누르면, 참관 교사들이 각자 휴대폰으로 제출한 참관록이 모두 여기에 나타납니다.</div></div>
+          <div class="cloudset__act">
+            <button type="button" class="btn btn--sm btn--ghost" id="cloudLoad">전체 불러오기</button>
+            <button type="button" class="btn btn--sm btn--ghost" id="cloudCsv">전체 CSV로 내려받기</button>
+          </div>
         </div>
 
         <div class="pager">
@@ -2249,80 +2289,80 @@ body[data-annot="on"] .ann{display:block}
             <div class="res">
               <span class="res__n">0</span>
               <span class="res__t">우리 지역의 목소리 — 단원 안내 PPT<small>13장 · 생각 열기 질문 → 고성군·논산시 실제 개표 결과 → 평가 기준 네 가지 → 21차시 흐름 → 총괄평가 개요·체크리스트 → 차시 예고</small><code class="res__f">0차시 우리 지역의 목소리 안내 PPT.pptx</code></span>
-              <div class="res__act"><a class="res__go" href="#/unit" data-nav>단원 소개 →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/kxhTCbpg" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/unit" data-nav>단원 소개 →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1-X0DghTfhWKhF7YHv_mfX2f9PdW8jl_7" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
 
             <div class="res res--group">개념 수업 · 1~4차시</div>
             <div class="res">
               <span class="res__n">1</span>
               <span class="res__t">선거 4대 원칙 판별 카드<small>12쌍 대조 진술 — 보통·평등·직접·비밀 각 3쌍. 한 쌍씩 보여 주고 “어느 쪽이 민주적 선거인가”를 판정하게 합니다.</small><code class="res__f">1학년 사회 선거원칙.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/fiiNjvfy" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1BuvViJFFcOUsIDRfjAxin2IKXF6Slbpw" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">2</span>
               <span class="res__t">출구 티켓 「선거의 4대 원칙」<small>한 장에 4인분(재단용) · ① 4대 원칙 쓰기 ② 가장 중요하다고 생각하는 원칙과 이유 ③ 그 원칙이 사라진다면 ④ 이해가 안 되는 부분</small><code class="res__f">2차시 출구 티켓.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/SfPhdrdQ" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1UDnGQI5imXB6BZJA3YGaANvUW8Km_ONU" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">3</span>
               <span class="res__t">프레이어 모델 활동지 — 민주주의 · 권력<small>중심개념 2장 · 정의(내 말로) · 핵심 특징 3 · 예 2 / 비예시 2 · 생각 열기 질문 3개(학급 회의·의견 충돌·투표에서 진 사람)</small><code class="res__f">3차시 학습지 프레이어모델_활동지_민주주의_권력.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/PpjWguJ0" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1v42aB6bhVW4aLkqwKWZDPM2_5PvyTtFL" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">4</span>
               <span class="res__t">시민 참여 사례 카드 12장<small>학급 회장 선거 ①부터 SNS 공유·가족 토론·공청회 발언까지 — 선거/비선거 참여를 섞어 놓은 분류용 카드</small><code class="res__f">4차시 사례카드.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/95A8x7TV" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1IhvgILer8RnfDPlemvFtEVyGlepTSNb5" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">4</span>
               <span class="res__t">모둠 학습지 「분류에서 일반화까지」<small>4단계 — ①12장을 우리 기준으로 2~3그룹 ②일반화 문장 3개 완성(㉮~㉰) ③“시민·선택·권력·변화”가 모두 든 탐구 진술문 ④교사 진술문과 비교</small><code class="res__f">4차시 조별 학습지.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/LFDFeoG5" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1lQkkPmUmcDbZNLnHHAuVv17Y3Tk-LI4u" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">4</span>
               <span class="res__t">질문 만들기(QFT) 활동지<small>초점 문장 “나의 한 표는 우리 동네를 바꾼다” · 규칙 4가지 · 12문항 쏟아내기 → 2개 선정·이유 → 사실적/개념적/논쟁적 세 바구니 분류</small><code class="res__f">4차시 질문만들기 활동지.hwpx</code></span>
-              <div class="res__act"><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/qWExF51v" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1FoYl7ooLgSGa1ejkNBmwz9RbmP1a_ihu" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
 
             <div class="res res--group">조사 설계 · 5차시</div>
             <div class="res">
               <span class="res__n">5</span>
               <span class="res__t">형성평가 ① 「조사 설계 점검」 — 기준 B 대비<small>자료 뱅크를 펼치기 전에 계획부터 · ①문제 영역 7가지 중 선택(교통안전·공원·청소년 공간·상권·주차·고령·직접 쓰기, 근거 자료 기호까지) ②연구 질문 공식 ③자료 선택 계획</small><code class="res__f">5차시 B 형성평가.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/bank" data-nav>자료 뱅크 →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/pEpevigf" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/bank" data-nav>자료 뱅크 →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1pwMJOmzpndWcgSq8qt197T1xwmeXnxui" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
 
             <div class="res res--group">조사 실행 · 6~7차시</div>
             <div class="res">
               <span class="res__n">6·7</span>
               <span class="res__t">형성평가 「공약 검증 연습」 — 푸른동 미니 자료 뱅크<small>후보 1명 축소판 · 공보물 ㉠ / 현황 카드 ㉡ / 신문 ㉢㉣(주차타워 85억·3년 vs 억새길 무관 기사) · 권한·재원·사실·관련성 4기준으로 공약 ①주차타워 ②안전 도우미 검증 — 총괄평가 Ⅲ-3 예행연습</small><code class="res__f">7차시 B 형성평가.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/campaign" data-nav>공보물 →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/9yuae5Xi" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/campaign" data-nav>공보물 →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1KlrOg20w_lPb130F4IqkLpy62sfscHfK" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">6·7</span>
               <span class="res__t">우리동 조사 기록장 ① — 연구 질문과 조사 계획<small>5차시 질문을 피드백 반영해 다시 적기 · 선택 이유 문장 틀(숫자 넣기) · 알아낼 것 3가지 · 자료 선택 계획 6단계 · 질문·계획 변경 여부와 이유</small><code class="res__f">6 7차시 B대비 조사 기록지.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 B →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/00gtc4Wf" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 B →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1TKGQ0AA_FHK_dBJAZJ18hOOFzoLyotJL" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">7</span>
               <span class="res__t">형성평가 「모둠 나눔 슬립」 — 조사 중반 점검<small>1인 1장(2장 재단) · 8항목(연구 질문·선정 이유·수집 자료 건수 A/B/C/D·계획 대비 진행·변경 이유·막힌 점·더 볼 것·기록 연습) · 1인 1분 30초 나눔</small><code class="res__f">7차시 중간점검.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/planner" data-nav>플래너 →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/oOb2SsWM" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/planner" data-nav>플래너 →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1PBsOhNMWNCcu3VyqzPG6UbUHBTWOwwcb" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
 
             <div class="res res--group">총괄평가 · 9~10차시</div>
             <div class="res">
               <span class="res__n">9</span>
               <span class="res__t">총괄평가 B 「우리 동네 공약 검증 리포트」<small>조사보고서 최종 양식 · Ⅰ 조사 설계(연구 질문·선정 이유·알아낼 것) Ⅱ 실행 계획 6단계 Ⅲ 자료 정리 Ⅳ 검증 — Ⅰ~Ⅳ가 기준 B의 ⅰ~ⅳ로 각각 채점</small><code class="res__f">9차시 총괄평가 B.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>TSC →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/Tmj5ERUV" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>TSC →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1pVrIV8Q2WYIGqvBmB7KQmmrKWoc5-cu3" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">10</span>
               <span class="res__t">형성평가 D 「유권자 일기 연습」 + 교사용 운영 계획<small>튼튼구 자료 (A)전단·(B)학부모회 성명서로 ①요점 요약 ②출처·목적 분석 ③이익·부담 주체 ④5문장 유권자 일기 · 뒤쪽에 유닛 플랜 형성평가 칸 반영용 운영표</small><code class="res__f">10차시 형성평가 D.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 D →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/gidgDhrH" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 D →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=1Avcjo-rG4EGqwFwKaipRHqQ31gwLfL_G" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
             <div class="res">
               <span class="res__n">10</span>
               <span class="res__t">긴 글쓰기 연습 「나의 첫 유권자 일기」<small>채점하지 않는 45분 리허설 · 튼튼구 자료 (가)~(마)만 근거 · 600~1,000자 · 조건 ①~④가 기준 D의 ⅰ~ⅳ에 각각 대응 · 자기 점검표와 글의 뼈대·문장 틀 포함</small><code class="res__f">10차시 긴글쓰기 연습.hwpx</code></span>
-              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 D →</a><a class="res__dl" data-ext="download" href="https://www.genspark.ai/api/files/s/nTDsx4eP" target="_top" rel="noopener">내려받기 ↓</a></div>
+              <div class="res__act"><a class="res__go" href="#/tsc" data-nav>기준 D →</a><a class="res__dl" data-ext="download" href="https://drive.google.com/uc?export=download&id=10LjaVsZwywttH7vOpw-zXa7Nhe0WOaIN" target="_top" rel="noopener">내려받기 ↓</a></div>
             </div>
           </div>
 
@@ -2330,13 +2370,13 @@ body[data-annot="on"] .ann{display:block}
             <b>차시 번호에 대하여</b> — 파일 이름의 차시 표기(0~10차시)를 그대로 살렸습니다. 이 앱의 21차시 설계와는 칸 번호가 다르므로, 본시 12차시 자료를 찾으실 때는 7차시 「공약 검증 연습」과 9차시 총괄평가 B가 그 자리에 해당합니다.
           </div>
                     <details class="urlbox">
-            <summary>버튼이 안 열릴 때 — 주소를 복사해 쓰는 방법</summary>
+            <summary>버튼이 안 열릴 때 — 구글 드라이브 주소를 직접 여는 방법</summary>
             <p>아래 주소를 길게 눌러 복사한 뒤 브라우저 주소창에 붙여 넣으면 파일이 내려받아집니다.</p>
-            <table class="urltbl"><tbody><tr><td>0차시 우리 지역의 목소리 안내 PPT.pptx</td><td><a href="https://www.genspark.ai/api/files/s/kxhTCbpg" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/kxhTCbpg</a></td></tr><tr><td>1학년 사회 선거원칙.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/fiiNjvfy" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/fiiNjvfy</a></td></tr><tr><td>2차시 출구 티켓.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/SfPhdrdQ" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/SfPhdrdQ</a></td></tr><tr><td>3차시 프레이어모델_활동지.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/PpjWguJ0" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/PpjWguJ0</a></td></tr><tr><td>4차시 사례카드.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/95A8x7TV" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/95A8x7TV</a></td></tr><tr><td>4차시 조별 학습지.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/LFDFeoG5" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/LFDFeoG5</a></td></tr><tr><td>4차시 질문만들기 활동지.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/qWExF51v" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/qWExF51v</a></td></tr><tr><td>5차시 B 형성평가.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/pEpevigf" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/pEpevigf</a></td></tr><tr><td>6 7차시 B대비 조사 기록지.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/00gtc4Wf" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/00gtc4Wf</a></td></tr><tr><td>7차시 B 형성평가.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/9yuae5Xi" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/9yuae5Xi</a></td></tr><tr><td>7차시 중간점검.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/oOb2SsWM" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/oOb2SsWM</a></td></tr><tr><td>9차시 총괄평가 B.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/Tmj5ERUV" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/Tmj5ERUV</a></td></tr><tr><td>10차시 형성평가 D.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/gidgDhrH" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/gidgDhrH</a></td></tr><tr><td>10차시 긴글쓰기 연습.hwpx</td><td><a href="https://www.genspark.ai/api/files/s/nTDsx4eP" target="_top" rel="noopener">https://www.genspark.ai/api/files/s/nTDsx4eP</a></td></tr></tbody></table>
+            <table class="urltbl"><tbody><tr><td>0차시 우리 지역의 목소리 안내 PPT.pptx</td><td><a href="https://drive.google.com/uc?export=download&id=1-X0DghTfhWKhF7YHv_mfX2f9PdW8jl_7" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1-X0DghTfhWKhF7YHv_mfX2f9PdW8jl_7</a></td></tr><tr><td>1학년 사회 선거원칙.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1BuvViJFFcOUsIDRfjAxin2IKXF6Slbpw" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1BuvViJFFcOUsIDRfjAxin2IKXF6Slbpw</a></td></tr><tr><td>2차시 출구 티켓.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1UDnGQI5imXB6BZJA3YGaANvUW8Km_ONU" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1UDnGQI5imXB6BZJA3YGaANvUW8Km_ONU</a></td></tr><tr><td>3차시 프레이어모델_활동지.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1v42aB6bhVW4aLkqwKWZDPM2_5PvyTtFL" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1v42aB6bhVW4aLkqwKWZDPM2_5PvyTtFL</a></td></tr><tr><td>4차시 사례카드.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1IhvgILer8RnfDPlemvFtEVyGlepTSNb5" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1IhvgILer8RnfDPlemvFtEVyGlepTSNb5</a></td></tr><tr><td>4차시 조별 학습지.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1lQkkPmUmcDbZNLnHHAuVv17Y3Tk-LI4u" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1lQkkPmUmcDbZNLnHHAuVv17Y3Tk-LI4u</a></td></tr><tr><td>4차시 질문만들기 활동지.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1FoYl7ooLgSGa1ejkNBmwz9RbmP1a_ihu" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1FoYl7ooLgSGa1ejkNBmwz9RbmP1a_ihu</a></td></tr><tr><td>5차시 B 형성평가.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1pwMJOmzpndWcgSq8qt197T1xwmeXnxui" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1pwMJOmzpndWcgSq8qt197T1xwmeXnxui</a></td></tr><tr><td>6 7차시 B대비 조사 기록지.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1TKGQ0AA_FHK_dBJAZJ18hOOFzoLyotJL" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1TKGQ0AA_FHK_dBJAZJ18hOOFzoLyotJL</a></td></tr><tr><td>7차시 B 형성평가.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1KlrOg20w_lPb130F4IqkLpy62sfscHfK" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1KlrOg20w_lPb130F4IqkLpy62sfscHfK</a></td></tr><tr><td>7차시 중간점검.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1PBsOhNMWNCcu3VyqzPG6UbUHBTWOwwcb" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1PBsOhNMWNCcu3VyqzPG6UbUHBTWOwwcb</a></td></tr><tr><td>9차시 총괄평가 B.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1pVrIV8Q2WYIGqvBmB7KQmmrKWoc5-cu3" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1pVrIV8Q2WYIGqvBmB7KQmmrKWoc5-cu3</a></td></tr><tr><td>10차시 형성평가 D.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=1Avcjo-rG4EGqwFwKaipRHqQ31gwLfL_G" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=1Avcjo-rG4EGqwFwKaipRHqQ31gwLfL_G</a></td></tr><tr><td>10차시 긴글쓰기 연습.hwpx</td><td><a href="https://drive.google.com/uc?export=download&id=10LjaVsZwywttH7vOpw-zXa7Nhe0WOaIN" target="_top" rel="noopener">https://drive.google.com/uc?export=download&id=10LjaVsZwywttH7vOpw-zXa7Nhe0WOaIN</a></td></tr></tbody></table>
           </details>
 
           <div class="callout">
-            <b>내려받기</b> — 오른쪽 「내려받기 ↓」를 누르면 새 탭에서 원본 파일이 내려받아집니다. 파일 이름은 첨부해 주신 그대로이며, 배부용으로 인쇄하실 때는 한글에서 열어 그대로 출력하시면 됩니다.
+            <b>내려받기</b> — 오른쪽 「내려받기 ↓」를 누르면 구글 드라이브에서 원본 파일이 바로 내려받아집니다. 드라이브에 로그인하지 않아도 됩니다. 파일 이름은 첨부해 주신 그대로이며, 배부용으로 인쇄하실 때는 한글에서 열어 그대로 출력하시면 됩니다.
           </div>
         </div>
 
@@ -2435,6 +2475,17 @@ body[data-annot="on"] .ann{display:block}
       document.getElementById("recDoneWho").textContent = rec.observer + (rec.school ? " · " + rec.school : "") + " · " + rec.createdAt + " 접수";
       form.hidden = true; done.hidden = false; paint();
       window.scrollTo({ top: 0, behavior: "smooth" });
+      var who = document.getElementById("recDoneWho");
+      var base = rec.observer + (rec.school ? " · " + rec.school : "") + " · " + rec.createdAt + " 접수";
+      if(!curl()){ who.textContent = base + " (이 기기에 저장)"; }
+      else {
+        who.textContent = base + " · 클라우드로 보내는 중…";
+        push(rec).then(function(j){
+          who.textContent = base + (j && j.unknown ? " · 클라우드 전송(확인 필요)" : " · 클라우드 전송 완료");
+        }).catch(function(){
+          who.textContent = base + " · 이 기기 저장 완료, 클라우드 전송은 실패했습니다. 주소를 확인해 주세요.";
+        });
+      }
     });
 
     document.getElementById("recAgain").addEventListener("click", function(){
@@ -2459,6 +2510,92 @@ body[data-annot="on"] .ann{display:block}
       document.body.appendChild(a); a.click();
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1200);
     });
+    /* ── 클라우드 동기화 (Google Apps Script 웹 앱) ── */
+    var CKEY = "ds_openclass_cloud_url_v1";
+    var CDEF = "https://script.google.com/macros/s/AKfycbzgBf16BQKdcEavV_25PIlClFpRbfLeDeBw7iLwX2G-IcgofECsJQ4G1llwc8l_awXx/exec";
+    var CL = [];
+    function curl(){ try{ return (localStorage.getItem(CKEY) || CDEF).trim(); }catch(e){ return CDEF; } }
+    function setSt(el, txt, cls){ el.textContent = txt; el.className = "cloudset__st" + (cls ? " " + cls : ""); }
+    function push(rec){
+      var u = curl(); if(!u) return Promise.resolve({ skipped: true });
+      rec.device = (navigator.userAgent || "").slice(0, 60);
+      var body = JSON.stringify(rec);
+      var opt = { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body };
+      return fetch(u, opt).then(function(r){ return r.text(); }).then(function(t){
+        var j = JSON.parse(t); if(!j || !j.ok) throw new Error("bad"); return j;
+      }).catch(function(){
+        var o2 = { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body };
+        return fetch(u, o2).then(function(){ return { ok: true, unknown: true }; });
+      });
+    }
+    function cloudUrlInput(){ return document.getElementById("cloudUrl"); }
+    document.getElementById("cloudSave").addEventListener("click", function(){
+      var st = document.getElementById("cloudSt");
+      var v = (cloudUrlInput().value || "").trim();
+      if(!v){ setSt(st, "주소를 입력해 주세요.", "ng"); return; }
+      if(!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(v)){
+        setSt(st, "형식이 맞지 않습니다. …/macros/s/…/exec 로 끝나야 합니다.", "ng"); return;
+      }
+      try{ localStorage.setItem(CKEY, v); }catch(e){ setSt(st, "저장에 실패했습니다.", "ng"); return; }
+      setSt(st, "저장했습니다. 「연결 확인」으로 시험해 보세요.", "ok");
+    });
+    document.getElementById("cloudClear").addEventListener("click", function(){
+      try{ localStorage.removeItem(CKEY); }catch(e){}
+      cloudUrlInput().value = ""; setSt(document.getElementById("cloudSt"), "동기화를 해제했습니다. 이제 이 기기에만 저장됩니다.", "");
+      document.getElementById("cloudCount").textContent = "";
+      document.getElementById("cloudList").innerHTML = '<div class="reclist__e">동기화가 해제되었습니다.</div>';
+    });
+    document.getElementById("cloudTest").addEventListener("click", function(){
+      var st = document.getElementById("cloudSt"); var u = curl() || (cloudUrlInput().value || "").trim();
+      if(!u){ setSt(st, "주소를 먼저 저장해 주세요.", "ng"); return; }
+      setSt(st, "확인 중…", "");
+      fetch(u + (u.indexOf("?") > -1 ? "&" : "?") + "action=list").then(function(r){ return r.json(); }).then(function(j){
+        if(!j || !j.ok) throw new Error("x");
+        setSt(st, "연결되었습니다 — 시트에 " + (j.count || 0) + "건이 있습니다.", "ok");
+      }).catch(function(){
+        setSt(st, "연결되지 않았습니다. 배포 시 액세스를 「모든 사용자」로 했는지 확인해 주세요.", "ng");
+      });
+    });
+    document.getElementById("cloudLoad").addEventListener("click", function(){
+      var st = document.getElementById("cloudSt"); var u = curl();
+      if(!u){ setSt(st, "동기화 주소를 먼저 저장해 주세요.", "ng"); return; }
+      setSt(st, "불러오는 중…", "");
+      fetch(u + (u.indexOf("?") > -1 ? "&" : "?") + "action=list").then(function(r){ return r.json(); }).then(function(j){
+        if(!j || !j.ok) throw new Error("x");
+        CL = j.rows || [];
+        document.getElementById("cloudCount").textContent = CL.length ? CL.length + "건" : "";
+        renderCloud();
+        setSt(st, "클라우드에서 " + CL.length + "건을 불러왔습니다.", "ok");
+      }).catch(function(){
+        setSt(st, "불러오지 못했습니다. 주소와 배포 설정을 확인해 주세요.", "ng");
+      });
+    });
+    function renderCloud(){
+      var el = document.getElementById("cloudList");
+      if(!CL.length){ el.innerHTML = '<div class="reclist__e">아직 클라우드에 접수된 참관록이 없습니다.</div>'; return; }
+      el.innerHTML = CL.slice().reverse().map(function(r){
+        var body = [["수업 철학", r.o1], ["수업 설계", r.o2], ["교수·학생 활동", r.o3], ["질문·조언", r.o4], ["변화", r.o5]]
+          .filter(function(x){ return x[1] && String(x[1]).length; })
+          .map(function(x){ return "· " + x[0] + " — " + x[1]; }).join("\n");
+        return '<div class="cloudrow"><b>' + esc(r.observer || "(이름 없음)") + '<span class="d">'
+          + esc(r.school || "") + (r.createdAt ? " · " + esc(String(r.createdAt)) : "") + '</span></b>'
+          + '<p>' + esc(body) + '</p></div>';
+      }).join("");
+    }
+    document.getElementById("cloudCsv").addEventListener("click", function(){
+      if(!CL.length){ setSt(document.getElementById("cloudSt"), "먼저 「전체 불러오기」를 눌러 주세요.", "ng"); return; }
+      var head = ["접수시각","참관교사","소속","수업교사","대상","주제","일시","장소","수업철학","수업설계","교수·학생활동","질문·조언","변화"];
+      var rows = CL.map(function(r){ return [r.createdAt,r.observer,r.school,r.teacher,r["class"],r.topic,r.when,r.where,r.o1,r.o2,r.o3,r.o4,r.o5]
+        .map(function(v){ return '"' + String(v || "").replace(/"/g, '""') + '"'; }).join(","); });
+      var csv = "\ufeff" + [head.join(",")].concat(rows).join("\r\n");
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "참관록_클라우드_" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1200);
+    });
+    try{ cloudUrlInput().value = curl(); }catch(e){}
+
     paint();
   })();
   /* ── 라우팅 ───────────────────────────────── */
