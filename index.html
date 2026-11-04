@@ -2820,6 +2820,7 @@ body[data-annot="on"] .ann{display:block}
     clearSig();
     stateEl.textContent = "서명 전";
     receiptZone.scrollIntoView({block:"start",behavior:"smooth"});
+    setTimeout(function(){ try{ var b = document.getElementById("ciCloudLoad"); if(b) b.click(); }catch(e){} }, 1800);
   });
 
   document.getElementById("ciReset").addEventListener("click", function(){ clearSig(); clearErr(); });
@@ -2845,9 +2846,11 @@ body[data-annot="on"] .ann{display:block}
       if(!CIR.length){ box.innerHTML = '<div class="empty">아직 클라우드에 접수된 기록이 없습니다.</div>'; return; }
       box.innerHTML = '<ul class="roster__list">' + CIR.slice().reverse().map(function(r){
         var t = r.ts ? fmtShort(r.ts) : "";
-        var sig = r.sigId
+        var okId = r.sigId && /^[A-Za-z0-9_-]{25,}$/.test(String(r.sigId));
+        var sig = okId
           ? '<a class="sigview" href="https://drive.google.com/file/d/' + encodeURIComponent(r.sigId) + '/view" target="_blank" rel="noopener">' +
-              '<img src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(r.sigId) + '&sz=w240" alt="' + esc(r.name || "") + ' 서명">' +
+              '<img src="https://drive.google.com/thumbnail?id=' + encodeURIComponent(r.sigId) + '&sz=w240" alt="' + esc(r.name || "") + ' 서명" ' +
+              'onerror="this.parentNode.style.display=\'none\'">' +
               '<i>서명 보기</i></a>'
           : '<span class="sigview sigview--none">서명 없음</span>';
         return '<li class="rrow"><span class="rrow__n">' + esc(r.name || "") +
